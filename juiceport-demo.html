@@ -1,0 +1,1274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JuicePort — Site Host Dashboard</title>
+  <link href="https://fonts.cdnfonts.com/css/norwester" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ─── CODE GATE ───────────────────────────────────────────── */
+    #codeGate {
+      position: fixed; inset: 0; z-index: 9999;
+      background: #0a0700;
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column;
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+    #codeGate.unlock {
+      opacity: 0; transform: scale(1.04); pointer-events: none;
+    }
+    .gate-bg {
+      position: absolute; inset: 0; overflow: hidden; pointer-events: none;
+    }
+    .gate-blob {
+      position: absolute; border-radius: 50%;
+      filter: blur(90px); opacity: 0.18;
+    }
+    .gate-blob-1 { width: 600px; height: 400px; background: #EC8300; top: -100px; left: -150px; animation: blobFloat 8s ease-in-out infinite; }
+    .gate-blob-2 { width: 500px; height: 350px; background: #75AC30; bottom: -80px; right: -100px; animation: blobFloat 10s ease-in-out infinite reverse; }
+    @keyframes blobFloat { 0%,100%{transform:translateY(0) rotate(0deg)} 50%{transform:translateY(-30px) rotate(8deg)} }
+
+    .gate-card {
+      position: relative; z-index: 1;
+      display: flex; flex-direction: column; align-items: center;
+      gap: 28px; width: 380px;
+    }
+    .gate-logo {
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+    }
+    .gate-mango {
+      width: 64px; height: 64px; border-radius: 18px;
+      background: linear-gradient(135deg, #EC8300, #b86200);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 36px;
+      box-shadow: 0 0 40px rgba(236,131,0,0.35);
+    }
+    .gate-wordmark {
+      font-family: 'Norwester', Arial Narrow, sans-serif;
+      font-size: 36px; letter-spacing: 3px; color: #f5ead8;
+    }
+    .gate-wordmark span { color: #EC8300; }
+    .gate-tagline {
+      font-size: 12px; color: #7a6a4a; letter-spacing: 0.5px;
+      text-align: center; line-height: 1.5;
+    }
+    .gate-divider {
+      width: 40px; height: 2px;
+      background: linear-gradient(90deg, transparent, #EC8300, transparent);
+    }
+    .gate-form {
+      width: 100%; display: flex; flex-direction: column; gap: 12px;
+    }
+    .gate-label {
+      font-size: 11px; color: #7a6a4a; text-transform: uppercase;
+      letter-spacing: 1px; text-align: center;
+    }
+    .gate-input-wrap { position: relative; }
+    .gate-input {
+      width: 100%; padding: 14px 18px; font-size: 18px;
+      letter-spacing: 4px; text-align: center; text-transform: uppercase;
+      background: #181309; color: #f5ead8;
+      border: 1px solid #332a14; border-radius: 10px;
+      outline: none; font-family: 'Norwester', monospace;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .gate-input::placeholder { letter-spacing: 2px; font-size: 14px; color: #4a3a20; text-transform: none; font-family: sans-serif; }
+    .gate-input:focus { border-color: #EC8300; box-shadow: 0 0 0 3px rgba(236,131,0,0.12); }
+    .gate-input.error { border-color: #e05050; box-shadow: 0 0 0 3px rgba(224,80,80,0.12); animation: shake 0.35s ease; }
+    @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+    .gate-btn {
+      width: 100%; padding: 14px; border: none; border-radius: 10px;
+      background: #EC8300; color: #000;
+      font-family: 'Norwester', sans-serif; font-size: 17px; letter-spacing: 2px;
+      cursor: pointer; transition: opacity 0.15s, transform 0.1s;
+    }
+    .gate-btn:hover { opacity: 0.88; }
+    .gate-btn:active { transform: scale(0.98); }
+    .gate-error {
+      font-size: 12px; color: #e05050; text-align: center;
+      min-height: 16px; transition: opacity 0.2s;
+    }
+    .gate-footer {
+      font-size: 11px; color: #4a3a20; text-align: center; line-height: 1.6;
+    }
+    .gate-footer a { color: #7a6a4a; text-decoration: none; }
+
+    /* Welcome flash */
+    #welcomeFlash {
+      position: fixed; inset: 0; z-index: 10000;
+      background: rgba(236,131,0,0.06);
+      display: flex; align-items: center; justify-content: center;
+      pointer-events: none; opacity: 0;
+      transition: opacity 0.3s;
+    }
+    #welcomeFlash.show { opacity: 1; }
+    .welcome-msg {
+      font-family: 'Norwester', sans-serif;
+      font-size: 28px; letter-spacing: 2px; color: #EC8300;
+      text-align: center; line-height: 1.3;
+      text-shadow: 0 0 40px rgba(236,131,0,0.5);
+    }
+
+    :root {
+      --orange:      #EC8300;
+      --orange-dim:  rgba(236,131,0,0.1);
+      --orange-glow: rgba(236,131,0,0.25);
+      --green:       #75AC30;
+      --green-dim:   rgba(117,172,48,0.1);
+      --green-glow:  rgba(117,172,48,0.25);
+      --red:         #e05050;
+      --red-dim:     rgba(224,80,80,0.1);
+      --blue:        #4a90d9;
+      --blue-dim:    rgba(74,144,217,0.1);
+      --amber:       #d4a017;
+      --amber-dim:   rgba(212,160,23,0.1);
+      --gray:        #6b7280;
+      --gray-dim:    rgba(107,114,128,0.12);
+
+      --bg:      #0e0b06;
+      --surf:    #181309;
+      --surf2:   #201a0e;
+      --surf3:   #2a2213;
+      --border:  #332a14;
+      --border2: #3e3318;
+
+      --text:    #f5ead8;
+      --soft:    #c4b48f;
+      --muted:   #7a6a4a;
+
+      --font-brand: 'Norwester', 'Bebas Neue', Arial Narrow, sans-serif;
+      --font-body:  -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    body { font-family: var(--font-body); background: var(--bg); color: var(--text); min-height: 100vh; display: flex; }
+
+    /* ─── SIDEBAR ─────────────────────────────────────────────── */
+    .sidebar {
+      width: 228px; min-height: 100vh; flex-shrink: 0;
+      background: var(--surf); border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+    }
+    .logo-area {
+      padding: 22px 18px 18px;
+      border-bottom: 1px solid var(--border);
+    }
+    .logo-row { display: flex; align-items: center; gap: 10px; }
+    .logo-mango {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, var(--orange), #b86200);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; flex-shrink: 0;
+    }
+    .logo-wordmark {
+      font-family: var(--font-brand);
+      font-size: 22px;
+      letter-spacing: 1.5px;
+      color: var(--text);
+      line-height: 1;
+    }
+    .logo-wordmark span { color: var(--orange); }
+    .logo-tagline { font-size: 10.5px; color: var(--muted); margin-top: 5px; letter-spacing: 0.3px; }
+
+    .nav { padding: 14px 0; flex: 1; }
+    .nav-section { font-size: 9.5px; color: var(--muted); letter-spacing: 1.2px; text-transform: uppercase; padding: 8px 18px 4px; }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 18px; font-size: 13px; color: var(--muted);
+      cursor: pointer; transition: all 0.15s;
+      border-left: 2px solid transparent;
+    }
+    .nav-item:hover { color: var(--text); background: var(--surf2); }
+    .nav-item.active {
+      color: var(--orange); font-weight: 500;
+      background: var(--orange-dim);
+      border-left-color: var(--orange);
+    }
+    .nav-icon { font-size: 15px; width: 18px; text-align: center; }
+    .nav-badge {
+      margin-left: auto; background: var(--red);
+      color: #fff; font-size: 10px; padding: 1px 6px; border-radius: 20px;
+    }
+
+    .sidebar-site {
+      padding: 14px 18px; border-top: 1px solid var(--border);
+    }
+    .site-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--surf2); border: 1px solid var(--border2);
+      border-radius: 8px; padding: 7px 10px; width: 100%;
+    }
+    .site-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); flex-shrink: 0; animation: blink 2.5s infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    .site-info { flex: 1; min-width: 0; }
+    .site-name { font-size: 12.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .site-sub { font-size: 10.5px; color: var(--muted); margin-top: 1px; }
+
+    /* ─── MAIN ────────────────────────────────────────────────── */
+    .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 28px;
+      background: var(--surf); border-bottom: 1px solid var(--border);
+    }
+    .topbar-left { display: flex; align-items: center; gap: 16px; }
+    .page-title { font-family: var(--font-brand); font-size: 20px; letter-spacing: 1px; color: var(--text); }
+    .live-pill {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 11px; color: var(--green);
+      background: var(--green-dim); border: 1px solid var(--green-glow);
+      border-radius: 20px; padding: 3px 10px;
+    }
+    .live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: blink 2s infinite; }
+
+    /* Tab switcher */
+    .tab-switcher {
+      display: flex; align-items: center;
+      background: var(--surf2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 3px; gap: 2px;
+    }
+    .tab-btn {
+      padding: 6px 16px; border-radius: 6px; font-size: 12.5px; font-weight: 500;
+      cursor: pointer; border: none; background: none; color: var(--muted);
+      transition: all 0.15s; white-space: nowrap;
+    }
+    .tab-btn.active { background: var(--orange); color: #000; font-weight: 600; }
+    .tab-btn:not(.active):hover { color: var(--text); background: var(--surf3); }
+
+    .topbar-right { display: flex; align-items: center; gap: 12px; }
+    .clock { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+    .icon-btn {
+      position: relative; background: var(--surf2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 6px 10px; cursor: pointer; font-size: 15px;
+      color: var(--soft); transition: background 0.15s;
+    }
+    .icon-btn:hover { background: var(--surf3); }
+    .notif-dot {
+      position: absolute; top: 5px; right: 5px;
+      width: 7px; height: 7px; background: var(--red);
+      border-radius: 50%; border: 1px solid var(--bg);
+    }
+
+    /* Tab panels */
+    .tab-panel { display: none; }
+    .tab-panel.active { display: flex; flex-direction: column; flex: 1; overflow-y: auto; }
+
+    /* ─── DASHBOARD TAB ───────────────────────────────────────── */
+    .content { padding: 22px 28px; display: flex; flex-direction: column; gap: 20px; }
+
+    /* Alert banner */
+    .alert-banner {
+      display: flex; align-items: center; gap: 14px;
+      background: var(--red-dim); border: 1px solid rgba(224,80,80,0.3);
+      border-radius: 10px; padding: 13px 16px;
+      animation: slideDown 0.3s ease;
+    }
+    @keyframes slideDown { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
+    .ab-icon { font-size: 18px; flex-shrink: 0; }
+    .ab-body { flex: 1; }
+    .ab-title { font-size: 13px; font-weight: 600; color: var(--red); }
+    .ab-sub { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+    .ab-btn {
+      padding: 7px 14px; background: var(--red); color: #fff;
+      border: none; border-radius: 7px; font-size: 12px; font-weight: 600;
+      cursor: pointer; flex-shrink: 0; transition: opacity 0.15s;
+    }
+    .ab-btn:hover { opacity: 0.85; }
+
+    /* KPI row */
+    .kpi-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; }
+    .kpi {
+      background: var(--surf); border: 1px solid var(--border);
+      border-radius: 12px; padding: 18px 18px 14px;
+      position: relative; overflow: hidden;
+    }
+    .kpi::after {
+      content: ''; position: absolute; bottom: 0; left: 0; right: 0;
+      height: 2px; background: var(--orange); opacity: 0.6;
+    }
+    .kpi.green-accent::after { background: var(--green); }
+    .kpi-label { font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 8px; }
+    .kpi-val { font-family: var(--font-brand); font-size: 32px; letter-spacing: 0; line-height: 1; color: var(--text); }
+    .kpi-sub { font-size: 11.5px; color: var(--muted); margin-top: 6px; }
+    .up { color: var(--green); font-weight: 600; }
+    .dn { color: var(--red); font-weight: 600; }
+
+    /* ROI strip */
+    .roi-strip {
+      display: flex; align-items: center; gap: 0;
+      background: linear-gradient(135deg, rgba(236,131,0,0.07), rgba(117,172,48,0.04));
+      border: 1px solid rgba(236,131,0,0.2); border-radius: 12px; overflow: hidden;
+    }
+    .roi-item { flex: 1; text-align: center; padding: 16px 12px; }
+    .roi-val { font-family: var(--font-brand); font-size: 26px; color: var(--orange); letter-spacing: 0.5px; }
+    .roi-label { font-size: 10.5px; color: var(--muted); margin-top: 3px; }
+    .roi-div { width: 1px; background: var(--border); align-self: stretch; }
+
+    /* Middle grid */
+    .mid-grid { display: grid; grid-template-columns: 1fr 330px; gap: 18px; }
+    .card { background: var(--surf); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    .card-hd {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 18px; border-bottom: 1px solid var(--border);
+    }
+    .card-title { font-family: var(--font-brand); font-size: 15px; letter-spacing: 0.8px; color: var(--text); }
+    .card-link { font-size: 11.5px; color: var(--orange); background: none; border: none; cursor: pointer; }
+    .card-link:hover { text-decoration: underline; }
+
+    /* Charger grid */
+    .charger-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 10px; padding: 16px; }
+    .ctile {
+      border-radius: 9px; padding: 12px 10px; cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+      border: 1px solid transparent; position: relative;
+    }
+    .ctile:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.4); }
+    .ctile.charging { background: var(--green-dim); border-color: var(--green-glow); }
+    .ctile.available { background: var(--gray-dim); border-color: rgba(107,114,128,0.25); }
+    .ctile.reserved  { background: var(--blue-dim);  border-color: rgba(74,144,217,0.25); }
+    .ctile.offline   { background: var(--red-dim);   border-color: rgba(224,80,80,0.3); }
+    .ctile.finishing { background: var(--amber-dim); border-color: rgba(212,160,23,0.3); }
+    .ctile-id { font-size: 9.5px; color: var(--muted); margin-bottom: 7px; font-weight: 500; }
+    .ctile-icon { font-size: 20px; margin-bottom: 5px; }
+    .ctile-status { font-size: 10.5px; font-weight: 700; margin-bottom: 3px; }
+    .ctile.charging .ctile-status  { color: var(--green); }
+    .ctile.available .ctile-status { color: var(--gray); }
+    .ctile.reserved .ctile-status  { color: var(--blue); }
+    .ctile.offline .ctile-status   { color: var(--red); }
+    .ctile.finishing .ctile-status { color: var(--amber); }
+    .ctile-detail { font-size: 10px; color: var(--muted); }
+    .offline-pulse {
+      position: absolute; top: 7px; right: 7px;
+      width: 7px; height: 7px; background: var(--red);
+      border-radius: 50%; animation: blink 1.4s infinite;
+    }
+
+    /* Activity feed */
+    .activity-list { padding: 4px 0; }
+    .activity-item {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 10px 18px; border-bottom: 1px solid var(--border);
+      transition: background 0.12s;
+    }
+    .activity-item:last-child { border-bottom: none; }
+    .activity-item:hover { background: var(--surf2); }
+    .adot { width: 7px; height: 7px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+    .adot-g { background: var(--green); }
+    .adot-r { background: var(--red); }
+    .adot-o { background: var(--orange); }
+    .adot-b { background: var(--blue); }
+    .adot-x { background: var(--gray); }
+    .abody { flex: 1; }
+    .atext { font-size: 12px; line-height: 1.4; }
+    .atime { font-size: 10.5px; color: var(--muted); margin-top: 2px; }
+    .atag {
+      font-size: 10px; padding: 2px 7px; border-radius: 4px;
+      font-weight: 600; flex-shrink: 0; align-self: center;
+    }
+    .tag-auto  { background: var(--green-dim); color: var(--green); }
+    .tag-alert { background: var(--red-dim);   color: var(--red); }
+    .tag-info  { background: var(--blue-dim);  color: var(--blue); }
+
+    /* Bottom grid */
+    .bot-grid { display: grid; grid-template-columns: 1fr 330px; gap: 18px; }
+    .chart-wrap { padding: 16px; height: 195px; }
+
+    /* Comms panel */
+    .comms-body { padding: 14px 18px; display: flex; flex-direction: column; gap: 9px; }
+    .comms-intro { font-size: 11.5px; color: var(--muted); margin-bottom: 2px; }
+    .msg-row {
+      border: 1px solid var(--border); border-radius: 8px;
+      padding: 10px 12px; display: flex; align-items: center;
+      justify-content: space-between; gap: 10px;
+      transition: border-color 0.15s; cursor: default;
+    }
+    .msg-row:hover { border-color: var(--orange); background: var(--orange-dim); }
+    .msg-text { font-size: 12px; line-height: 1.4; color: var(--soft); flex: 1; }
+    .send-btn {
+      font-size: 11px; padding: 5px 12px;
+      background: var(--orange); color: #000;
+      border: none; border-radius: 5px; cursor: pointer;
+      font-weight: 700; flex-shrink: 0; transition: opacity 0.15s;
+    }
+    .send-btn:hover { opacity: 0.85; }
+    .send-btn:disabled { opacity: 0.45; cursor: default; }
+
+    /* ─── CUSTOMER VIEW TAB ───────────────────────────────────── */
+    .cv-layout {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 0; flex: 1; min-height: 0;
+    }
+
+    /* Left — scenarios */
+    .cv-left {
+      padding: 28px 24px; border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; gap: 20px;
+      overflow-y: auto;
+    }
+    .cv-intro-title {
+      font-family: var(--font-brand); font-size: 22px; letter-spacing: 1px;
+      color: var(--text); line-height: 1.1;
+    }
+    .cv-intro-title span { color: var(--orange); }
+    .cv-intro-sub { font-size: 13px; color: var(--muted); margin-top: 6px; line-height: 1.5; }
+
+    .scenarios-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+    .scenario-list { display: flex; flex-direction: column; gap: 8px; }
+    .scenario-btn {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 16px; border-radius: 10px;
+      border: 1px solid var(--border); background: var(--surf2);
+      cursor: pointer; transition: all 0.15s; text-align: left;
+    }
+    .scenario-btn:hover { border-color: var(--orange); background: var(--orange-dim); }
+    .scenario-btn.active { border-color: var(--orange); background: var(--orange-dim); }
+    .scenario-emoji { font-size: 22px; flex-shrink: 0; }
+    .scenario-info { flex: 1; }
+    .scenario-title { font-size: 13.5px; font-weight: 600; color: var(--text); }
+    .scenario-desc { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+    .scenario-arrow { font-size: 14px; color: var(--muted); }
+
+    /* Trigger card */
+    .trigger-card {
+      background: var(--surf2); border: 1px solid var(--border);
+      border-radius: 10px; padding: 16px;
+    }
+    .trigger-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); margin-bottom: 10px; }
+    .trigger-rule {
+      display: flex; align-items: flex-start; gap: 10px;
+      font-size: 12px; color: var(--soft); line-height: 1.5;
+    }
+    .trigger-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+    .trigger-arrow {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 11px; color: var(--muted); margin: 8px 0 8px 26px;
+    }
+    .trigger-arrow::before { content: '↓'; color: var(--orange); font-size: 14px; }
+
+    /* Right — phone mockup */
+    .cv-right {
+      display: flex; align-items: center; justify-content: center;
+      padding: 32px 28px;
+      background: radial-gradient(ellipse at 50% 0%, rgba(236,131,0,0.05) 0%, transparent 60%);
+    }
+    .phone-wrap { position: relative; }
+    .phone-frame {
+      width: 295px;
+      background: #111;
+      border-radius: 40px;
+      border: 8px solid #1f1f1f;
+      box-shadow: 0 0 0 1px #2a2a2a, 0 24px 60px rgba(0,0,0,0.6), 0 4px 12px rgba(0,0,0,0.4);
+      overflow: hidden; position: relative;
+    }
+    .phone-notch {
+      width: 80px; height: 22px; background: #111;
+      border-radius: 0 0 14px 14px; margin: 0 auto;
+      position: relative; z-index: 10;
+    }
+
+    /* WhatsApp inside the phone */
+    .wa-shell { background: #111b21; display: flex; flex-direction: column; height: 580px; }
+    .wa-header {
+      display: flex; align-items: center; gap: 10px;
+      background: #1f2c34; padding: 10px 14px 10px 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .wa-back { color: #00a884; font-size: 18px; cursor: pointer; }
+    .wa-avatar {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--orange), #b86200);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+    }
+    .wa-contact { flex: 1; }
+    .wa-contact-name { font-size: 13px; font-weight: 600; color: #e9edef; }
+    .wa-contact-status { font-size: 11px; color: #8696a0; }
+    .wa-icons { color: #8696a0; font-size: 16px; display: flex; gap: 14px; }
+
+    .wa-bg {
+      flex: 1; padding: 12px 10px; overflow-y: auto;
+      background: #0b141a;
+      background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.015'%3E%3Ccircle cx='30' cy='30' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+      display: flex; flex-direction: column; gap: 4px;
+    }
+
+    .wa-date-badge {
+      align-self: center; background: rgba(17,27,33,0.9);
+      color: #8696a0; font-size: 10.5px; padding: 4px 10px;
+      border-radius: 6px; margin: 6px 0;
+    }
+
+    .wa-msg {
+      max-width: 85%; padding: 7px 10px 14px; border-radius: 8px;
+      position: relative; font-size: 12.5px; line-height: 1.5;
+      animation: msgIn 0.2s ease;
+    }
+    @keyframes msgIn { from{opacity:0;transform:scale(0.95)} to{opacity:1;transform:scale(1)} }
+    .wa-msg.in {
+      background: #202c33; color: #e9edef;
+      border-top-left-radius: 0; align-self: flex-start;
+    }
+    .wa-msg.out {
+      background: #005c4b; color: #e9edef;
+      border-top-right-radius: 0; align-self: flex-end;
+    }
+    .wa-msg-time {
+      position: absolute; bottom: 4px; right: 8px;
+      font-size: 9.5px; color: #8696a0;
+    }
+    .wa-msg.out .wa-msg-time { color: #53bdeb; }
+    .wa-tick { font-size: 10px; }
+
+    .wa-typing {
+      align-self: flex-start; background: #202c33;
+      border-radius: 8px; border-top-left-radius: 0;
+      padding: 10px 14px; display: flex; gap: 4px; align-items: center;
+    }
+    .typing-dot {
+      width: 6px; height: 6px; background: #8696a0; border-radius: 50%;
+      animation: typingBounce 1.2s infinite;
+    }
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes typingBounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-5px)} }
+
+    .wa-input-bar {
+      background: #1f2c34; padding: 8px 10px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .wa-input {
+      flex: 1; background: #2a3942; border: none;
+      border-radius: 20px; padding: 8px 14px;
+      color: #e9edef; font-size: 12px; outline: none;
+    }
+    .wa-input::placeholder { color: #8696a0; }
+    .wa-send-btn {
+      width: 36px; height: 36px; background: #00a884;
+      border-radius: 50%; border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; color: #fff;
+    }
+
+    /* ─── MODAL ───────────────────────────────────────────────── */
+    .overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.75);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 900; opacity: 0; pointer-events: none; transition: opacity 0.2s;
+    }
+    .overlay.show { opacity: 1; pointer-events: all; }
+    .modal {
+      background: var(--surf); border: 1px solid var(--border2);
+      border-radius: 14px; padding: 26px; width: 400px;
+      transform: scale(0.95); transition: transform 0.2s;
+    }
+    .overlay.show .modal { transform: scale(1); }
+    .modal-hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+    .modal-title { font-family: var(--font-brand); font-size: 18px; letter-spacing: 0.8px; }
+    .modal-x { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 20px; }
+    .mrow {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 13px;
+    }
+    .mrow:last-of-type { border-bottom: none; }
+    .mkey { color: var(--muted); }
+    .mval { font-weight: 500; }
+    .mval.g { color: var(--green); }
+    .mval.o { color: var(--orange); }
+    .mval.r { color: var(--red); }
+    .modal-btns { display: flex; gap: 10px; margin-top: 18px; }
+    .mbtn-p {
+      flex: 1; padding: 10px; background: var(--orange); color: #000;
+      border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer;
+    }
+    .mbtn-s {
+      flex: 1; padding: 10px; background: var(--surf2); color: var(--text);
+      border: 1px solid var(--border); border-radius: 8px; font-size: 13px; cursor: pointer;
+    }
+
+    /* ─── TOAST ───────────────────────────────────────────────── */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: var(--surf2); border: 1px solid var(--orange);
+      border-radius: 10px; padding: 13px 16px; max-width: 310px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      display: flex; align-items: flex-start; gap: 10px;
+      transform: translateY(70px); opacity: 0;
+      transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1); z-index: 1000;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast-icon { font-size: 17px; flex-shrink: 0; }
+    .toast-title { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+    .toast-body { font-size: 11.5px; color: var(--muted); }
+  </style>
+</head>
+<body>
+
+<!-- ═══════ CODE GATE ═══════ -->
+<div id="codeGate">
+  <div class="gate-bg">
+    <div class="gate-blob gate-blob-1"></div>
+    <div class="gate-blob gate-blob-2"></div>
+  </div>
+  <div class="gate-card">
+    <div class="gate-logo">
+      <div class="gate-mango">🥭</div>
+      <div class="gate-wordmark">JUICE<span>PORT</span></div>
+      <div class="gate-tagline">EV Charging Intelligence<br>juiceport.ai</div>
+    </div>
+    <div class="gate-divider"></div>
+    <div class="gate-form">
+      <div class="gate-label">Enter your access code</div>
+      <div class="gate-input-wrap">
+        <input class="gate-input" id="gateInput" type="text" placeholder="Access code" autocomplete="off" maxlength="20" onkeydown="if(event.key==='Enter') checkCode()" oninput="clearGateError()" />
+      </div>
+      <button class="gate-btn" onclick="checkCode()">GET ACCESS →</button>
+      <div class="gate-error" id="gateError"></div>
+    </div>
+    <div class="gate-footer">
+      Don't have a code? Reach out at <a href="#">juiceport.ai</a>
+    </div>
+  </div>
+</div>
+
+<!-- Welcome flash -->
+<div id="welcomeFlash"><div class="welcome-msg" id="welcomeMsg"></div></div>
+
+<!-- ═══════ SIDEBAR ═══════ -->
+<aside class="sidebar">
+  <div class="logo-area">
+    <div class="logo-row">
+      <div class="logo-mango">🥭</div>
+      <div class="logo-wordmark">JUICE<span>PORT</span></div>
+    </div>
+    <div class="logo-tagline">EV Charging Intelligence · juiceport.ai</div>
+  </div>
+
+  <nav class="nav">
+    <div class="nav-section">Main</div>
+    <div class="nav-item active"><span class="nav-icon">📊</span> Dashboard</div>
+    <div class="nav-item"><span class="nav-icon">⚡</span> Chargers</div>
+    <div class="nav-item"><span class="nav-icon">📈</span> Analytics</div>
+    <div class="nav-section" style="margin-top:8px;">Communicate</div>
+    <div class="nav-item"><span class="nav-icon">💬</span> Messages</div>
+    <div class="nav-item">
+      <span class="nav-icon">🔔</span> Alerts
+      <span class="nav-badge" id="navBadge">1</span>
+    </div>
+    <div class="nav-section" style="margin-top:8px;">Account</div>
+    <div class="nav-item"><span class="nav-icon">⚙️</span> Settings</div>
+  </nav>
+
+  <div class="sidebar-site">
+    <div class="site-pill">
+      <div class="site-dot"></div>
+      <div class="site-info">
+        <div class="site-name">Arena Parking Hub</div>
+        <div class="site-sub">Amsterdam · 10 chargers</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- ═══════ MAIN ═══════ -->
+<main class="main">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="page-title">LIVE DASHBOARD</div>
+      <div class="live-pill"><div class="live-dot"></div> Live</div>
+    </div>
+    <div class="tab-switcher">
+      <button class="tab-btn active" onclick="switchTab('dashboard', this)">🏢 Site Host View</button>
+      <button class="tab-btn" onclick="switchTab('customer', this)">📱 Customer View</button>
+    </div>
+    <div class="topbar-right">
+      <div class="clock" id="clock">—</div>
+      <div class="icon-btn" onclick="openChargerModal('P-09')">🔔<div class="notif-dot" id="notifDot"></div></div>
+    </div>
+  </div>
+
+  <!-- ═══ DASHBOARD TAB ═══ -->
+  <div class="tab-panel active" id="tab-dashboard">
+    <div class="content">
+
+      <!-- Alert banner -->
+      <div class="alert-banner" id="alertBanner">
+        <div class="ab-icon">🔴</div>
+        <div class="ab-body">
+          <div class="ab-title">Charger P-09 offline — fault detected 2 min ago</div>
+          <div class="ab-sub">2 affected drivers automatically notified via WhatsApp. No calls to your team.</div>
+        </div>
+        <button class="ab-btn" onclick="resolveAlert()">Mark Resolved</button>
+      </div>
+
+      <!-- KPIs -->
+      <div class="kpi-row">
+        <div class="kpi">
+          <div class="kpi-label">Chargers Online</div>
+          <div class="kpi-val" id="kpiOnline">9/10</div>
+          <div class="kpi-sub"><span class="dn">1 fault</span> · P-09 offline</div>
+        </div>
+        <div class="kpi green-accent">
+          <div class="kpi-label">Active Sessions</div>
+          <div class="kpi-val" id="kpiSessions">4</div>
+          <div class="kpi-sub"><span class="up">↑ 63%</span> utilisation today</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Revenue Today</div>
+          <div class="kpi-val">€127</div>
+          <div class="kpi-sub"><span class="up">+€38</span> vs same day last week</div>
+        </div>
+        <div class="kpi green-accent">
+          <div class="kpi-label">Support Calls Saved</div>
+          <div class="kpi-val">31</div>
+          <div class="kpi-sub">This month · <span class="up">~4.5 hrs</span> back</div>
+        </div>
+      </div>
+
+      <!-- ROI strip -->
+      <div class="roi-strip">
+        <div class="roi-item"><div class="roi-val">+34%</div><div class="roi-label">Utilisation vs. pre-JuicePort</div></div>
+        <div class="roi-div"></div>
+        <div class="roi-item"><div class="roi-val">€1,524</div><div class="roi-label">Extra revenue this month</div></div>
+        <div class="roi-div"></div>
+        <div class="roi-item"><div class="roi-val">4.8 ★</div><div class="roi-label">Google reviews (EV mention)</div></div>
+        <div class="roi-div"></div>
+        <div class="roi-item"><div class="roi-val">&lt;4 min</div><div class="roi-label">Issue → driver notification</div></div>
+      </div>
+
+      <!-- Middle grid -->
+      <div class="mid-grid">
+        <div class="card">
+          <div class="card-hd">
+            <div class="card-title">CHARGER STATUS</div>
+            <button class="card-link">View all →</button>
+          </div>
+          <div class="charger-grid" id="chargerGrid"></div>
+        </div>
+        <div class="card">
+          <div class="card-hd">
+            <div class="card-title">LIVE ACTIVITY</div>
+            <button class="card-link">Full log →</button>
+          </div>
+          <div class="activity-list" id="activityFeed"></div>
+        </div>
+      </div>
+
+      <!-- Bottom grid -->
+      <div class="bot-grid">
+        <div class="card">
+          <div class="card-hd">
+            <div class="card-title">SESSIONS PER DAY — LAST 14 DAYS</div>
+            <span style="font-size:11px;color:var(--muted)">industry avg: &lt;1 session/port/day</span>
+          </div>
+          <div class="chart-wrap"><canvas id="chart"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-hd">
+            <div class="card-title">QUICK COMMS</div>
+            <span style="font-size:11px;color:var(--muted)">4 drivers connected</span>
+          </div>
+          <div class="comms-body">
+            <div class="comms-intro">Send a WhatsApp message to active drivers — one click.</div>
+            <div class="msg-row">
+              <div class="msg-text">✅ Charge nearly complete — please collect within 15 min.</div>
+              <button class="send-btn" onclick="sendMsg(this,'Charge complete reminder sent to 1 driver')">Send</button>
+            </div>
+            <div class="msg-row">
+              <div class="msg-text">⚡ Charging underway — estimated full charge in ~45 min.</div>
+              <button class="send-btn" onclick="sendMsg(this,'Status update sent to 4 active drivers')">Send</button>
+            </div>
+            <div class="msg-row">
+              <div class="msg-text">🎁 While you charge — 10% off any café in the building today!</div>
+              <button class="send-btn" onclick="sendMsg(this,'Promo sent · 1 redemption already logged')">Send</button>
+            </div>
+            <div class="msg-row">
+              <div class="msg-text">🔧 Charger P-09 is back online. Sorry for the wait!</div>
+              <button class="send-btn" onclick="sendMsg(this,'Recovery notice sent to 2 affected drivers')">Send</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div><!-- /dashboard tab -->
+
+  <!-- ═══ CUSTOMER VIEW TAB ═══ -->
+  <div class="tab-panel" id="tab-customer">
+    <div class="cv-layout">
+
+      <!-- Left: scenarios -->
+      <div class="cv-left">
+        <div>
+          <div class="cv-intro-title">What your <span>customer</span> receives</div>
+          <div class="cv-intro-sub">Every event at your chargers triggers an automatic WhatsApp message to the driver. Here's exactly what they see — no app download required.</div>
+        </div>
+
+        <div>
+          <div class="scenarios-label" style="margin-bottom:10px">Choose a scenario to preview</div>
+          <div class="scenario-list" id="scenarioList">
+            <button class="scenario-btn active" data-id="start" onclick="runScenario('start',this)">
+              <span class="scenario-emoji">⚡</span>
+              <div class="scenario-info">
+                <div class="scenario-title">Session Started</div>
+                <div class="scenario-desc">Driver plugs in at P-05 — instant confirmation</div>
+              </div>
+              <span class="scenario-arrow">▶</span>
+            </button>
+            <button class="scenario-btn" data-id="update" onclick="runScenario('update',this)">
+              <span class="scenario-emoji">📊</span>
+              <div class="scenario-info">
+                <div class="scenario-title">Mid-Session Update</div>
+                <div class="scenario-desc">Automated progress update at 80% charge</div>
+              </div>
+              <span class="scenario-arrow">▶</span>
+            </button>
+            <button class="scenario-btn" data-id="complete" onclick="runScenario('complete',this)">
+              <span class="scenario-emoji">✅</span>
+              <div class="scenario-info">
+                <div class="scenario-title">Charge Complete</div>
+                <div class="scenario-desc">Session done — please collect your vehicle</div>
+              </div>
+              <span class="scenario-arrow">▶</span>
+            </button>
+            <button class="scenario-btn" data-id="issue" onclick="runScenario('issue',this)">
+              <span class="scenario-emoji">🔧</span>
+              <div class="scenario-info">
+                <div class="scenario-title">Charger Fault</div>
+                <div class="scenario-desc">P-09 offline — driver notified before they even walk over</div>
+              </div>
+              <span class="scenario-arrow">▶</span>
+            </button>
+            <button class="scenario-btn" data-id="promo" onclick="runScenario('promo',this)">
+              <span class="scenario-emoji">🎁</span>
+              <div class="scenario-info">
+                <div class="scenario-title">Promo While Charging</div>
+                <div class="scenario-desc">Turn dwell time into store visits</div>
+              </div>
+              <span class="scenario-arrow">▶</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Trigger card -->
+        <div class="trigger-card" id="triggerCard">
+          <div class="trigger-title">🤖 Automation Rule</div>
+          <div id="triggerContent">
+            <div class="trigger-rule"><span class="trigger-icon">⚡</span><span>Charger P-05 reports new session initiated (OCPP status: Charging)</span></div>
+            <div class="trigger-arrow">JuicePort detects event</div>
+            <div class="trigger-rule"><span class="trigger-icon">💬</span><span>WhatsApp message sent to driver NL-114 within 3 seconds</span></div>
+          </div>
+        </div>
+
+        <div style="font-size:11.5px;color:var(--muted);line-height:1.6;">
+          Works via WhatsApp, SMS, or any channel. No app needed for the driver. You stay in control from the dashboard.
+        </div>
+      </div>
+
+      <!-- Right: phone mockup -->
+      <div class="cv-right">
+        <div class="phone-wrap">
+          <div class="phone-frame">
+            <div class="phone-notch"></div>
+            <div class="wa-shell">
+              <div class="wa-header">
+                <span class="wa-back">‹</span>
+                <div class="wa-avatar">🥭</div>
+                <div class="wa-contact">
+                  <div class="wa-contact-name">JuicePort</div>
+                  <div class="wa-contact-status" id="waStatus">online</div>
+                </div>
+                <div class="wa-icons"><span>📞</span><span>⋮</span></div>
+              </div>
+              <div class="wa-bg" id="waChat">
+                <div class="wa-date-badge">Today</div>
+              </div>
+              <div class="wa-input-bar">
+                <input class="wa-input" placeholder="Type a message" />
+                <button class="wa-send-btn">➤</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div><!-- /customer tab -->
+
+</main><!-- /main -->
+
+<!-- ═══ MODAL ═══ -->
+<div class="overlay" id="overlay" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title" id="modalTitle">Charger Detail</div>
+      <button class="modal-x" onclick="closeModalDirect()">×</button>
+    </div>
+    <div id="modalBody"></div>
+    <div class="modal-btns">
+      <button class="mbtn-p" onclick="notifyDriver()">📱 Notify Driver</button>
+      <button class="mbtn-s" onclick="closeModalDirect()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ TOAST ═══ -->
+<div class="toast" id="toast">
+  <div class="toast-icon">🥭</div>
+  <div>
+    <div class="toast-title" id="toastTitle"></div>
+    <div class="toast-body" id="toastBody"></div>
+  </div>
+</div>
+
+<script>
+// ── Clock ──────────────────────────────────────────────────────────────────
+function tick() {
+  document.getElementById('clock').textContent =
+    new Date().toLocaleTimeString('en-NL', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+setInterval(tick, 1000); tick();
+
+// ── Tab switch ─────────────────────────────────────────────────────────────
+function switchTab(id, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  btn.classList.add('active');
+  document.querySelector('.page-title').textContent =
+    id === 'dashboard' ? 'LIVE DASHBOARD' : 'CUSTOMER VIEW';
+}
+
+// ── Charger data ───────────────────────────────────────────────────────────
+const chargers = [
+  { id:'P-01', status:'charging',  icon:'⚡', label:'Charging',  detail:'34 min · 18.4 kWh', driver:'DK-891', kw:'22 kW', eta:'18 min',    soc:'74%' },
+  { id:'P-02', status:'charging',  icon:'⚡', label:'Charging',  detail:'12 min · 6.1 kWh',  driver:'NL-447', kw:'22 kW', eta:'41 min',    soc:'28%' },
+  { id:'P-03', status:'available', icon:'🟢', label:'Available', detail:'Free since 10:41',   driver:'—',      kw:'—',     eta:'—',         soc:'—'   },
+  { id:'P-04', status:'finishing', icon:'🟡', label:'Finishing', detail:'~4 min left',        driver:'BE-203', kw:'11 kW', eta:'4 min',     soc:'98%' },
+  { id:'P-05', status:'charging',  icon:'⚡', label:'Charging',  detail:'67 min · 24.7 kWh', driver:'NL-114', kw:'22 kW', eta:'8 min',     soc:'91%' },
+  { id:'P-06', status:'reserved',  icon:'🔵', label:'Reserved',  detail:'App reservation',   driver:'NL-552', kw:'—',     eta:'~12:15',    soc:'—'   },
+  { id:'P-07', status:'available', icon:'🟢', label:'Available', detail:'Free since 11:02',   driver:'—',      kw:'—',     eta:'—',         soc:'—'   },
+  { id:'P-08', status:'charging',  icon:'⚡', label:'Charging',  detail:'21 min · 9.2 kWh',  driver:'DE-779', kw:'22 kW', eta:'32 min',    soc:'42%' },
+  { id:'P-09', status:'offline',   icon:'🔴', label:'Offline',   detail:'OCPP timeout',      driver:'—',      kw:'—',     eta:'Tech alerted',soc:'—' },
+  { id:'P-10', status:'available', icon:'🟢', label:'Available', detail:'Free since 09:58',   driver:'—',      kw:'—',     eta:'—',         soc:'—'   },
+];
+
+function renderChargers() {
+  document.getElementById('chargerGrid').innerHTML = chargers.map(c => `
+    <div class="ctile ${c.status}" onclick="openChargerModal('${c.id}')">
+      ${c.status === 'offline' ? '<div class="offline-pulse"></div>' : ''}
+      <div class="ctile-id">${c.id}</div>
+      <div class="ctile-icon">${c.icon}</div>
+      <div class="ctile-status">${c.label}</div>
+      <div class="ctile-detail">${c.detail}</div>
+    </div>
+  `).join('');
+}
+renderChargers();
+
+// ── Activity feed ──────────────────────────────────────────────────────────
+let activities = [
+  { dot:'adot-r', text:'P-09 went offline — OCPP timeout detected',                    tag:'tag-alert', tl:'Alert',   time:'2 min ago'  },
+  { dot:'adot-g', text:'2 affected drivers auto-notified via WhatsApp',                 tag:'tag-auto',  tl:'Auto',    time:'2 min ago'  },
+  { dot:'adot-g', text:'P-05 session started — NL-114 · 22 kW',                        tag:'tag-info',  tl:'Session', time:'9 min ago'  },
+  { dot:'adot-o', text:'P-04 nearing completion — driver reminder queued',              tag:'tag-auto',  tl:'Auto',    time:'11 min ago' },
+  { dot:'adot-b', text:'P-06 reserved via app — NL-552 arriving ~12:15',               tag:'tag-info',  tl:'Info',    time:'18 min ago' },
+  { dot:'adot-g', text:'P-08 session started — DE-779 · 22 kW',                        tag:'tag-info',  tl:'Session', time:'21 min ago' },
+  { dot:'adot-x', text:'P-03 session ended — BE-201 · 14.2 kWh delivered',             tag:'tag-info',  tl:'Session', time:'31 min ago' },
+  { dot:'adot-g', text:'Daily utilisation: 63% — 2× industry average',                  tag:'tag-auto',  tl:'Auto',    time:'60 min ago' },
+];
+function renderActivity() {
+  document.getElementById('activityFeed').innerHTML = activities.map(a => `
+    <div class="activity-item">
+      <div class="adot ${a.dot}"></div>
+      <div class="abody">
+        <div class="atext">${a.text}</div>
+        <div class="atime">${a.time}</div>
+      </div>
+      <div class="atag ${a.tag}">${a.tl}</div>
+    </div>
+  `).join('');
+}
+renderActivity();
+
+// ── Chart ──────────────────────────────────────────────────────────────────
+new Chart(document.getElementById('chart').getContext('2d'), {
+  type: 'bar',
+  data: {
+    labels: ['Mar 17','18','19','20','21','22','23','24','25','26','27','28','29','30'],
+    datasets: [
+      {
+        label: 'Your sessions',
+        data: [11,14,13,16,12,18,15,17,16,19,21,18,17,20],
+        backgroundColor: 'rgba(236,131,0,0.75)', borderRadius: 4, borderSkipped: false,
+      },
+      {
+        label: 'Industry avg',
+        data: Array(14).fill(10), type: 'line',
+        borderColor: 'rgba(117,172,48,0.5)', backgroundColor: 'transparent',
+        pointRadius: 0, borderWidth: 1.5, borderDash: [5,4],
+      }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { labels: { color:'#7a6a4a', font:{size:11}, boxWidth:12, padding:14 } },
+      tooltip: { callbacks: { label: c => ` ${c.dataset.label}: ${c.parsed.y} sessions` } }
+    },
+    scales: {
+      x: { ticks:{color:'#5a4a2a',font:{size:10}}, grid:{color:'rgba(255,255,255,0.03)'} },
+      y: { ticks:{color:'#5a4a2a',font:{size:10}}, grid:{color:'rgba(255,255,255,0.05)'}, beginAtZero:true }
+    }
+  }
+});
+
+// ── Modal ──────────────────────────────────────────────────────────────────
+let activeCharger = null;
+function openChargerModal(id) {
+  const c = chargers.find(x => x.id === id); if (!c) return;
+  activeCharger = c;
+  document.getElementById('modalTitle').textContent = `${c.id} — ${c.label}`;
+  const cls = {charging:'g',offline:'r',finishing:'o',reserved:'',available:''}[c.status] || '';
+  document.getElementById('modalBody').innerHTML = `
+    <div class="mrow"><span class="mkey">Status</span><span class="mval ${cls}">${c.label}</span></div>
+    <div class="mrow"><span class="mkey">Driver ID</span><span class="mval">${c.driver}</span></div>
+    <div class="mrow"><span class="mkey">Power</span><span class="mval">${c.kw}</span></div>
+    <div class="mrow"><span class="mkey">Battery</span><span class="mval">${c.soc}</span></div>
+    <div class="mrow"><span class="mkey">ETA / Notes</span><span class="mval">${c.eta}</span></div>
+    <div class="mrow"><span class="mkey">Detail</span><span class="mval">${c.detail}</span></div>
+  `;
+  document.getElementById('overlay').classList.add('show');
+}
+function closeModal(e) { if (e.target.id === 'overlay') closeModalDirect(); }
+function closeModalDirect() { document.getElementById('overlay').classList.remove('show'); }
+function notifyDriver() {
+  const msgs = { charging:`Sent to ${activeCharger?.driver} — session update delivered`, finishing:`Reminder sent to ${activeCharger?.driver}`, offline:'Recovery update sent to 2 affected drivers', available:'No driver connected', reserved:`Confirmation sent to ${activeCharger?.driver}` };
+  closeModalDirect();
+  showToast('Notification sent', msgs[activeCharger?.status] || 'Delivered');
+}
+
+// ── Toast ──────────────────────────────────────────────────────────────────
+function showToast(title, body) {
+  const t = document.getElementById('toast');
+  document.getElementById('toastTitle').textContent = title;
+  document.getElementById('toastBody').textContent = body;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3800);
+}
+function sendMsg(btn, msg) {
+  btn.disabled = true; btn.textContent = 'Sent ✓';
+  showToast('Message sent via WhatsApp', msg);
+  setTimeout(() => { btn.disabled = false; btn.textContent = 'Send'; }, 4000);
+}
+
+// ── Resolve alert ──────────────────────────────────────────────────────────
+function resolveAlert() {
+  const b = document.getElementById('alertBanner');
+  b.style.transition = 'opacity 0.4s'; b.style.opacity = '0';
+  setTimeout(() => b.style.display = 'none', 400);
+  const c = chargers.find(x => x.id === 'P-09');
+  Object.assign(c, { status:'available', icon:'🟢', label:'Available', detail:'Fault cleared', driver:'—', kw:'—', eta:'—', soc:'—' });
+  renderChargers();
+  document.getElementById('kpiOnline').textContent = '10/10';
+  const nd = document.getElementById('notifDot'); if (nd) nd.remove();
+  const nb = document.getElementById('navBadge'); if (nb) nb.remove();
+  activities.unshift({ dot:'adot-g', text:'P-09 fault cleared — marked back online', tag:'tag-info', tl:'Info', time:'Just now' });
+  renderActivity();
+  showToast('Resolved ✓', 'P-09 back online. Drivers notified automatically.');
+}
+
+// ── Auto: P-04 finishes after 18s ─────────────────────────────────────────
+setTimeout(() => {
+  const c = chargers.find(x => x.id === 'P-04');
+  if (!c) return;
+  Object.assign(c, { status:'available', icon:'🟢', label:'Available', detail:'Session ended 12:14', driver:'—', kw:'—', eta:'—', soc:'—' });
+  renderChargers();
+  activities.unshift({ dot:'adot-x', text:'P-04 session ended — BE-203 · 11.2 kWh · driver rated ★★★★★', tag:'tag-auto', tl:'Auto', time:'Just now' });
+  renderActivity();
+  document.getElementById('kpiSessions').textContent = '3';
+}, 18000);
+
+// ─── CUSTOMER VIEW ────────────────────────────────────────────────────────
+const scenarios = {
+  start: {
+    trigger: `
+      <div class="trigger-rule"><span class="trigger-icon">⚡</span><span>Charger P-05 reports new session (OCPP: Charging) — NL-114</span></div>
+      <div class="trigger-arrow">JuicePort detects event in &lt;2 sec</div>
+      <div class="trigger-rule"><span class="trigger-icon">💬</span><span>WhatsApp message sent to driver NL-114 automatically</span></div>`,
+    messages: [
+      { side:'in', delay:400,  text:'⚡ *Session started at Arena Parking Hub*\n\nCharger: P-05 · 22 kW\nEstimated full charge: ~52 min\n\nSit back and relax — we\'ll update you.' },
+      { side:'out', delay:1800, text:'Thank you!' },
+      { side:'in', delay:2800,  text:'You\'re welcome 😊 Reply *STATUS* anytime for a live update.' },
+    ]
+  },
+  update: {
+    trigger: `
+      <div class="trigger-rule"><span class="trigger-icon">📊</span><span>Battery SoC crosses 80% threshold on P-05</span></div>
+      <div class="trigger-arrow">JuicePort triggers mid-session rule</div>
+      <div class="trigger-rule"><span class="trigger-icon">💬</span><span>Progress update sent to driver NL-114</span></div>`,
+    messages: [
+      { side:'in', delay:400,  text:'📊 *Charge update · Arena Parking Hub*\n\nBattery: 80% ▓▓▓▓▓▓▓▓░░\nEstimated full charge: ~12 min\n\nAlmost there!' },
+      { side:'out', delay:1800, text:'Great, heading back now' },
+      { side:'in', delay:2800,  text:'Perfect timing 👍 Charger P-05 will hold your spot.' },
+    ]
+  },
+  complete: {
+    trigger: `
+      <div class="trigger-rule"><span class="trigger-icon">✅</span><span>OCPP reports session complete on P-05 (SoC: 100%)</span></div>
+      <div class="trigger-arrow">JuicePort fires completion rule</div>
+      <div class="trigger-rule"><span class="trigger-icon">💬</span><span>Collection reminder sent to driver with overstay notice</span></div>`,
+    messages: [
+      { side:'in', delay:400,  text:'✅ *Charging complete!*\n\nYour vehicle at P-05 is fully charged.\n\n⏰ Please collect within *15 minutes* to avoid an overstay fee.\n\nEnergy delivered: 24.7 kWh' },
+      { side:'out', delay:2200, text:'On my way, 5 mins away' },
+      { side:'in', delay:3200,  text:'Great! See you soon. Thanks for charging with us 🥭' },
+    ]
+  },
+  issue: {
+    trigger: `
+      <div class="trigger-rule"><span class="trigger-icon">🔴</span><span>P-09 goes offline — OCPP timeout, 2 drivers affected</span></div>
+      <div class="trigger-arrow">JuicePort fires fault notification rule</div>
+      <div class="trigger-rule"><span class="trigger-icon">💬</span><span>Proactive alert sent — before drivers walk over</span></div>`,
+    messages: [
+      { side:'in', delay:400,  text:'🔧 *Update about your charger at Arena Parking Hub*\n\nUnfortunately charger P-09 has gone offline due to a technical issue.\n\nA technician has been alerted. *Estimated fix: 25 min.*\n\nWe\'ve moved your reservation to P-10 — no action needed.' },
+      { side:'out', delay:2000, text:'Oh no, really? Thanks for the heads up at least' },
+      { side:'in', delay:3000,  text:'We\'re sorry for the inconvenience. P-10 is ready for you right now 🙏' },
+    ]
+  },
+  promo: {
+    trigger: `
+      <div class="trigger-rule"><span class="trigger-icon">🎁</span><span>Driver NL-114 has been charging for 20+ min (dwell time trigger)</span></div>
+      <div class="trigger-arrow">JuicePort fires dwell-time promo rule</div>
+      <div class="trigger-rule"><span class="trigger-icon">💬</span><span>Site host promo sent — turns wait into revenue</span></div>`,
+    messages: [
+      { side:'in', delay:400,  text:'🎁 *While you charge at Arena Parking Hub...*\n\nEnjoy *10% off* at any café or restaurant inside today.\n\nJust show this message at the till.\n\nValid until your session ends.' },
+      { side:'out', delay:1800, text:'Oh nice! Is the pasta place included?' },
+      { side:'in', delay:2800,  text:'Yes, all food & drink outlets on levels 1–3 are included 🍝 Enjoy!' },
+    ]
+  }
+};
+
+let scenarioRunning = false;
+function runScenario(id, btn) {
+  if (scenarioRunning) return;
+
+  // Update active button
+  document.querySelectorAll('.scenario-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  // Update trigger card
+  document.getElementById('triggerContent').innerHTML = scenarios[id].trigger;
+
+  // Clear chat
+  const chat = document.getElementById('waChat');
+  chat.innerHTML = '<div class="wa-date-badge">Today</div>';
+
+  // Show typing indicator then messages
+  scenarioRunning = true;
+  document.getElementById('waStatus').textContent = 'typing...';
+
+  const msgs = scenarios[id].messages;
+  let cumDelay = 0;
+
+  msgs.forEach((msg, i) => {
+    cumDelay += msg.delay;
+
+    // Show typing dot for 'in' messages
+    if (msg.side === 'in') {
+      setTimeout(() => {
+        const typing = document.createElement('div');
+        typing.className = 'wa-typing';
+        typing.id = 'typing-' + i;
+        typing.innerHTML = '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
+        chat.appendChild(typing);
+        chat.scrollTop = chat.scrollHeight;
+      }, cumDelay - 600);
+    }
+
+    setTimeout(() => {
+      const t = document.getElementById('typing-' + i);
+      if (t) t.remove();
+
+      const bubble = document.createElement('div');
+      bubble.className = 'wa-msg ' + msg.side;
+      const now = new Date();
+      const timeStr = now.getHours() + ':' + String(now.getMinutes()).padStart(2,'0');
+      const tick = msg.side === 'out' ? '<span class="wa-tick">✓✓</span> ' : '';
+      bubble.innerHTML = formatWA(msg.text) + `<div class="wa-msg-time">${tick}${timeStr}</div>`;
+      chat.appendChild(bubble);
+      chat.scrollTop = chat.scrollHeight;
+
+      if (i === msgs.length - 1) {
+        document.getElementById('waStatus').textContent = 'online';
+        scenarioRunning = false;
+      }
+    }, cumDelay);
+  });
+}
+
+function formatWA(text) {
+  // Bold: *text* → <strong>
+  return text.replace(/\*([^*]+)\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+}
+
+// Run default scenario on load — only after gate is cleared
+function startDemo() {
+  setTimeout(() => runScenario('start', document.querySelector('.scenario-btn')), 600);
+}
+
+// ─── CODE GATE ────────────────────────────────────────────────────────────
+const ACCESS_CODES = {
+  'QPARK':      { name: 'Q-Park',         welcome: 'Welcome, Q-Park team' },
+  'APCOA':      { name: 'APCOA Parking',  welcome: 'Welcome, APCOA team' },
+  'SCHIPHOL':   { name: 'Schiphol Group', welcome: 'Welcome, Schiphol team' },
+  'FLETCHER':   { name: 'Fletcher Hotels',welcome: 'Welcome, Fletcher Hotels' },
+  'IKEA':       { name: 'IKEA',           welcome: 'Welcome, IKEA team' },
+  'ELISO':      { name: 'eliso',          welcome: 'Welcome, eliso team' },
+  'DEMO':       { name: 'Guest',          welcome: 'Welcome to JuicePort' },
+  'JUICEPORT':  { name: 'JuicePort',      welcome: 'Welcome back, Ole 🥭' },
+};
+
+function checkCode() {
+  const raw = document.getElementById('gateInput').value.trim().toUpperCase();
+  const match = ACCESS_CODES[raw];
+
+  if (match) {
+    // Flash welcome message
+    const wf = document.getElementById('welcomeFlash');
+    document.getElementById('welcomeMsg').textContent = match.welcome;
+    wf.classList.add('show');
+    setTimeout(() => wf.classList.remove('show'), 1800);
+
+    // Unlock gate
+    setTimeout(() => {
+      document.getElementById('codeGate').classList.add('unlock');
+      setTimeout(() => document.getElementById('codeGate').remove(), 700);
+    }, 400);
+
+    // Personalise sidebar site name if known company
+    if (match.name !== 'JuicePort' && match.name !== 'Guest') {
+      const sn = document.querySelector('.site-name');
+      if (sn) sn.textContent = match.name + ' · Arena Hub';
+    }
+
+    startDemo();
+  } else {
+    const inp = document.getElementById('gateInput');
+    const err = document.getElementById('gateError');
+    inp.classList.add('error');
+    err.textContent = 'Invalid code — contact Ole to request access.';
+    setTimeout(() => inp.classList.remove('error'), 400);
+  }
+}
+
+function clearGateError() {
+  document.getElementById('gateError').textContent = '';
+}
+</script>
+</body>
+</html>
